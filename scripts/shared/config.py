@@ -90,8 +90,7 @@ def get_null_device() -> str:
     """
     获取空设备路径（跨平台）
 
-    Windows: NUL
-    Unix: /dev/null
+    Returns NUL on Windows, /dev/null on Unix-like systems.
     """
     if sys.platform == "win32":
         return "NUL"

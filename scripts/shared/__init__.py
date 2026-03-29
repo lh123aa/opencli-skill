@@ -17,8 +17,15 @@ from .config import (
     is_linux,
     Colors,
 )
+from .logger import (
+    OpenLogger,
+    get_logger,
+    set_log_level,
+    enable_file_logging,
+)
 
 __all__ = [
+    # Config
     "Config",
     "config",
     "get_data_dir",
@@ -31,4 +38,9 @@ __all__ = [
     "is_macos",
     "is_linux",
     "Colors",
+    # Logger
+    "OpenLogger",
+    "get_logger",
+    "set_log_level",
+    "enable_file_logging",
 ]

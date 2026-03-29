@@ -7,6 +7,8 @@ OpenCLI Diagnostic System
 import json
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -191,10 +193,6 @@ class DiagnosticSystem:
 
         for name, url in test_urls:
             try:
-                # 使用Python的urllib代替curl命令（跨平台）
-                import urllib.request
-                import urllib.error
-
                 req = urllib.request.Request(url, method="HEAD")
                 urllib.request.urlopen(req, timeout=10)
                 self.results.append(
@@ -225,9 +223,6 @@ class DiagnosticSystem:
 
         for name, url in platforms.items():
             try:
-                import urllib.request
-                import urllib.error
-
                 req = urllib.request.Request(url, method="HEAD")
                 urllib.request.urlopen(req, timeout=10)
                 self.results.append(

@@ -3,17 +3,29 @@ name: opencli
 description: OpenCLI命令行工具集成 - 将任何网站、Electron应用或本地工具转换为命令行界面。支持66+平台（中国：B站、知乎、小红书、微博等；国际：Twitter、Reddit、HackerNews等）和桌面应用控制（Cursor、ChatGPT、Notion等）。当用户需要：抓取社交媒体数据（评论、热榜、搜索结果）、获取平台热门内容、控制桌面应用、执行自动化CLI操作、获取结构化JSON/CSV数据、或任何涉及浏览器自动化的任务时使用此skill。此skill具备记忆和自我迭代功能，能记住用户偏好、学习工作流、记录问题并持续优化。
 ---
 
-# OpenCLI v2.2
+# OpenCLI v2.3
 
 通用浏览器自动化工具，通过MCP（Model Context Protocol）工具控制浏览器访问各类网站，获取结构化数据。**具备记忆和自我迭代能力，支持自动降级和增强诊断**。
 
 ## ⚠️ 重要说明
 
-**本skill不提供独立的CLI命令**。它通过以下方式工作：
+**本skill提供真正的CLI命令** `opencli`，同时支持MCP工具：
+
+### CLI命令
+```bash
+opencli doctor                    # 运行诊断检查
+opencli fallback <platform>       # 查看降级指南
+opencli memory <action>           # 记忆系统管理
+opencli iteration <action>       # 迭代引擎管理
+opencli reporter <action>         # 任务报告生成
+opencli --version                # 显示版本
+opencli --help                   # 显示帮助
+```
+
+### MCP工具
 1. **Chrome DevTools MCP** - 主要工具，直接控制Chrome浏览器
 2. **Agent Browser MCP** - 轻量级替代方案
 3. **Playwright MCP** - 跨浏览器支持
-4. **Python辅助脚本** - 诊断、记忆、迭代管理
 
 ### 数据抓取工作流
 
@@ -36,10 +48,14 @@ chrome-devtools click uid="xxx"
 
 ### doctor 命令
 ```bash
-# 详细诊断
-python scripts/diagnostic.py
+# CLI方式（推荐）
+opencli doctor
 
 # JSON格式输出
+opencli doctor --json
+
+# Python脚本方式
+python scripts/opencli.py doctor
 python scripts/diagnostic.py --json
 ```
 
@@ -285,6 +301,13 @@ click ref="@e1"                                    # 使用引用点击
 ---
 
 ## 更新日志
+
+### v2.3 (2026-03-30)
+- ✅ 新增日志系统 (shared/logger.py)
+- ✅ 实现真正的CLI命令 (opencli.py)
+- ✅ 修复所有P2类型注解问题
+- ✅ 清理urllib导入到文件顶部
+- ✅ 清理注释中的Unix路径
 
 ### v2.2 (2026-03-30)
 - ✅ 修复硬编码路径问题，使用跨平台配置模块

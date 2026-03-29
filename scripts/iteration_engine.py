@@ -45,7 +45,7 @@ class Problem:
     状态: str
     标签: List[str]
     解决方案: str = ""
-    迭代记录: List[Dict] = None
+    迭代记录: Optional[List[Dict]] = None
 
     def __post_init__(self):
         if self.迭代记录 is None:
@@ -159,7 +159,7 @@ class IterationEngine:
         command: str,
         error: str,
         priority: str = PRIORITY_MEDIUM,
-        tags: List[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> str:
         """报告一个问题"""
         self._problem_counter += 1
@@ -208,7 +208,10 @@ class IterationEngine:
         return False
 
     def get_problems(
-        self, status: str = None, platform: str = None, priority: str = None
+        self,
+        status: Optional[str] = None,
+        platform: Optional[str] = None,
+        priority: Optional[str] = None,
     ) -> List[Dict]:
         """获取问题列表"""
         data = self._load_problems()
@@ -351,7 +354,11 @@ class IterationEngine:
     # ========== 工作流学习 ==========
 
     def learn_workflow(
-        self, name: str, steps: List[Dict], platforms: List[str], tags: List[str] = None
+        self,
+        name: str,
+        steps: List[Dict],
+        platforms: List[str],
+        tags: Optional[List[str]] = None,
     ) -> str:
         """学习一个新工作流"""
         workflow_id = f"W{len(self._load_workflows()['workflows']) + 1:03d}"
@@ -382,7 +389,9 @@ class IterationEngine:
         self._save_workflows(data)
         return workflow_id
 
-    def get_workflows(self, platform: str = None, tag: str = None) -> List[Dict]:
+    def get_workflows(
+        self, platform: Optional[str] = None, tag: Optional[str] = None
+    ) -> List[Dict]:
         """获取工作流"""
         data = self._load_workflows()
         workflows = data["workflows"]
@@ -428,7 +437,7 @@ class IterationEngine:
 
     # ========== 报告生成 ==========
 
-    def generate_report(self, session_summary: Dict = None) -> tuple:
+    def generate_report(self, session_summary: Optional[Dict] = None) -> tuple:
         """生成迭代报告"""
         report_id = f"ITER-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
