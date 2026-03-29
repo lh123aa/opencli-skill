@@ -9,7 +9,15 @@ import sys
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
+
+# 尝试导入yaml（可选）
+try:
+    import yaml
+
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
 
 
 def get_data_dir() -> Path:
@@ -170,11 +178,64 @@ class Config:
 
     _instance = None
     _data_dir = None
+    _yaml_config = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._load_yaml_config()
         return cls._instance
+
+    def _load_yaml_config(self):
+        """从config.yaml加载配置"""
+        self._yaml_config = {}
+
+        if not HAS_YAML:
+            return
+
+        # 查找config.yaml
+        possible_paths = [
+            Path(__file__).parent.parent.parent / "config.yaml",  # 项目根目录
+            get_data_dir() / "config.yaml",  # 数据目录
+        ]
+
+        for config_path in possible_paths:
+            if config_path.exists():
+                try:
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        self._yaml_config = yaml.safe_load(f) or {}
+                    break
+                except Exception:
+                    pass
+
+    @property
+    def yaml_config(self) -> Dict[str, Any]:
+        """获取YAML配置"""
+        return self._yaml_config
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        获取配置值，支持点号分隔的路径如 'logging.level'
+
+        Args:
+            key: 配置键，支持嵌套如 'platforms.xiaohongshu.tool'
+            default: 默认值
+
+        Returns:
+            配置值或默认值
+        """
+        keys = key.split(".")
+        value = self._yaml_config
+
+        for k in keys:
+            if isinstance(value, dict):
+                value = value.get(k)
+                if value is None:
+                    return default
+            else:
+                return default
+
+        return value if value is not None else default
 
     @property
     def data_dir(self) -> Path:
@@ -204,9 +265,30 @@ class Config:
         """输出目录"""
         return ensure_dir(self.data_dir / "outputs")
 
+    @property
+    def log_level(self) -> str:
+        """获取日志级别"""
+        return self.get("logging.level", "INFO")
+
+    @property
+    def log_file_enabled(self) -> bool:
+        """是否启用文件日志"""
+        return self.get("logging.file_enabled", True)
+
+    @property
+    def chrome_path(self) -> Optional[str]:
+        """获取Chrome路径"""
+        return self.get("chrome.path")
+
+    @property
+    def default_format(self) -> str:
+        """获取默认输出格式"""
+        return self.get("output.default_format", "table")
+
     def reset(self):
         """重置配置（用于测试）"""
         self._data_dir = None
+        self._yaml_config = {}
 
 
 # 全局配置实例

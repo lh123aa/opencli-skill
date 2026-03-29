@@ -1,12 +1,23 @@
-# OpenCLI 命令参考 v2.0
+# OpenCLI 命令参考 v2.4
 
 ## 基础命令
 
 ```bash
 opencli --version              # 查看版本
+opencli --help                 # 显示帮助
 opencli doctor                 # 诊断连接状态
-opencli list                  # 列出所有命令
-opencli list -f json          # JSON格式列出命令
+opencli doctor --json          # JSON格式诊断
+```
+
+## 子命令
+
+```bash
+opencli fallback <platform>    # 查看降级指南
+opencli memory status          # 记忆系统状态
+opencli memory history        # 会话历史
+opencli iteration status      # 迭代系统状态
+opencli iteration report       # 生成迭代报告
+opencli reporter pending       # 待处理报告
 ```
 
 ## 输出格式

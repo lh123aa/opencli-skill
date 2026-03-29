@@ -302,6 +302,12 @@ click ref="@e1"                                    # 使用引用点击
 
 ## 更新日志
 
+### v2.4 (2026-03-30)
+- ✅ 新增单元测试框架 (tests/)
+- ✅ 新增config.yaml配置文件支持
+- ✅ 新增GitHub Actions CI/CD
+- ✅ 配置类支持YAML配置读取
+
 ### v2.3 (2026-03-30)
 - ✅ 新增日志系统 (shared/logger.py)
 - ✅ 实现真正的CLI命令 (opencli.py)

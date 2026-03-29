@@ -1,0 +1,69 @@
+# OpenCLI 配置文件
+# 文档: https://github.com/lh123aa/opencli-skill
+
+# 数据目录（默认: ~/.config/opencode/skills/opencli/data）
+# 可通过环境变量 OPENCLI_DATA_DIR 覆盖
+# data_dir: ~/.config/opencode/skills/opencli/data
+
+# 日志配置
+logging:
+  # 日志级别: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: INFO
+  # 是否启用文件日志
+  file_enabled: true
+  # 日志文件最大大小 (MB)
+  max_file_size: 10
+  # 保留的日志文件数量
+  backup_count: 5
+
+# Chrome配置
+chrome:
+  # Chrome路径（留空则自动检测）
+  # path: C:\Program Files\Google\Chrome\Application\chrome.exe
+  path: null
+  # 是否以无头模式启动
+  headless: false
+  # 页面加载超时 (秒)
+  page_timeout: 30
+
+# 默认平台设置
+platforms:
+  # 默认反爬等级: low, medium, high, extreme
+  default_anti_crawl_level: high
+  # 默认使用工具
+  default_tool: chrome-devtools
+  # 平台特定设置
+  xiaohongshu:
+    tool: chrome-devtools
+    anti_crawl_level: high
+  bilibili:
+    tool: chrome-devtools
+    anti_crawl_level: high
+  zhihu:
+    tool: chrome-devtools
+    anti_crawl_level: high
+
+# 记忆系统设置
+memory:
+  # 最大操作历史条数
+  max_operations: 50
+  # 最大常用命令条数
+  max_common_commands: 20
+  # 是否自动保存知识库
+  auto_save_knowledge: true
+
+# 迭代系统设置
+iteration:
+  # 是否自动生成报告
+  auto_report: true
+  # 问题自动升级阈值（天）
+  auto_escalate_days: 7
+
+# 输出设置
+output:
+  # 默认输出格式: table, json, yaml, csv
+  default_format: table
+  # 默认条数限制
+  default_limit: 10
+  # 输出目录
+  # directory: ~/.config/opencode/skills/opencli/data/outputs
