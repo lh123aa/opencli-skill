@@ -1,82 +1,54 @@
-# OpenCLI Skill
+# OpenCLI Skill v2.0
 
-通用CLI工具，通过预置适配器控制浏览器访问各类网站，获取结构化数据。**具备记忆和自我迭代能力**。
+通用CLI工具，通过预置适配器控制浏览器访问各类网站，获取结构化数据。**支持自动降级和增强诊断**。
+
+## ✨ 新功能 (v2.0)
+
+- 🔍 **增强诊断系统** - 详细检查连接状态，提供修复建议
+- 🔄 **自动降级机制** - 扩展不可用时自动推荐备用工具
+- 🇨🇳 **中国平台增强** - 小红书、B站、知乎、微博专用指南
 
 ## 核心能力
 
-### 1. 数据抓取
+### 数据抓取
 ```bash
 opencli bilibili hot --limit 10          # B站热搜
-opencli zhihu hot -f json                # 知乎热榜
+opencli xiaohongshu search <关键词>      # 小红书搜索
 opencli hackernews top                   # HN热门
-opencli reddit hot                       # Reddit热门
-opencli twitter trending                 # Twitter趋势
 ```
 
-### 2. 评论抓取
+### 诊断与降级
 ```bash
-opencli bilibili comments <bvid> --limit 20   # B站评论
-```
+# 详细诊断
+python scripts/diagnostic.py
 
-### 3. 内容下载
-```bash
-opencli bilibili download <bvid>              # 视频（需yt-dlp）
-opencli zhihu download <url>                  # 文章为Markdown
-opencli xiaohongshu download <note_id>       # 图片/视频
-```
-
-### 4. 输出格式
-```bash
-opencli <command> -f json     # JSON（程序处理）
-opencli <command> -f yaml     # YAML
-opencli <command> -f csv      # CSV
-opencli <command> -f table    # 表格（默认）
+# 查看平台降级指南
+python scripts/fallback_manager.py xiaohongshu
 ```
 
 ## 平台支持
 
-| 平台 | 命令前缀 | 说明 |
-|------|----------|------|
-| B站 | `bilibili` | 热榜、评论、下载 |
-| 知乎 | `zhihu` | 热榜、搜索、文章 |
-| 小红书 | `xiaohongshu` | 搜索、feed、下载 |
-| 微博 | `weibo` | 热搜 |
-| Twitter | `twitter` | 趋势、发推 |
-| Reddit | `reddit` | 热门、搜索 |
-| HN | `hackernews` | top、new、best |
-| 桌面应用 | `cursor`, `chatgpt`, `notion` | 应用控制 |
-
-## 前置条件
-
-1. Chrome浏览器已安装并打开
-2. Browser Bridge扩展已启用
-
-```bash
-opencli doctor  # 检查连接状态
-```
-
-## 故障排查
-
-| 问题 | 解决 |
-|------|------|
-| 扩展未连接 | `opencli doctor`检查，激活Chrome扩展 |
-| 返回空数据 | 确保Chrome已登录目标网站 |
-| 执行失败 | 查看迭代报告获取详情 |
+| 平台 | 反爬等级 | 推荐工具 |
+|------|---------|---------|
+| 🇨🇳 小红书 | 🔴 高 | Chrome DevTools |
+| 🇨🇳 B站 | 🔴 高 | Chrome DevTools |
+| 🇨🇳 知乎 | 🔴 高 | Chrome DevTools |
+| 🐦 Twitter | 🟡 中 | Playwright |
+| 🔵 Reddit | 🔵 低 | Agent-browser |
 
 ## 文件结构
 
 ```
 opencli-skill/
 ├── SKILL.md                    # 主技能文档
+├── README.md
 ├── references/
-│   └── commands.md             # 命令参考
-├── scripts/
-│   ├── memory_manager.py       # 记忆系统
-│   └── iteration_engine.py    # 迭代引擎
-└── data/                      # 数据存储（用户数据）
-    ├── memory/
-    ├── iteration/
-    └── outputs/
+│   └── commands.md             # 命令参考（含中国平台指南）
+└── scripts/
+    ├── diagnostic.py          # 增强诊断系统
+    ├── fallback_manager.py    # 自动降级管理器
+    ├── memory_manager.py      # 记忆系统
+    └── iteration_engine.py    # 迭代引擎
 ```
 
 ## 安装

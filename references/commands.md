@@ -1,4 +1,4 @@
-# OpenCLI 命令参考
+# OpenCLI 命令参考 v2.0
 
 ## 基础命令
 
@@ -21,12 +21,66 @@ opencli list -f json          # JSON格式列出命令
 ```bash
 opencli <command> -f json      # JSON输出
 opencli <command> -f yaml     # YAML输出
-opencli <command> -v           # 详细模式（调试）
+opencli <command> -v          # 详细模式（调试）
 ```
 
-## 中国平台
+---
+
+## 🇨🇳 中国平台专用指南
+
+### ⚠️ 重要：中国平台反爬说明
+
+中国平台（小红书、B站、知乎、微博）有较强的反爬机制，建议：
+
+1. **优先使用Chrome DevTools MCP** 而非OpenCLI直接命令
+2. **使用搜索结果页URL格式** 避免explore页面token验证问题
+3. **注意登录状态** 某些数据需要登录才能访问
+
+### 小红书 (xiaohongshu)
+
+#### OpenCLI命令
+```bash
+opencli xiaohongshu search <关键词>        # 搜索
+opencli xiaohongshu feed                   # 推荐 feed
+opencli xiaohongshu user <user_id>         # 用户信息
+opencli xiaohongshu download <note_id>     # 下载图片/视频
+opencli xiaohongshu notifications         # 通知
+```
+
+#### Chrome DevTools 备用方案
+
+当OpenCLI不可用时，使用Chrome DevTools MCP：
+
+```bash
+# 搜索结果页（推荐）
+chrome-devtools navigate_page url="https://www.xiaohongshu.com/search_result?keyword=关键词&source=web_search_result_notes"
+
+# 获取页面快照
+chrome-devtools take_snapshot
+
+# 点击帖子（使用take_snapshot返回的uid）
+chrome-devtools click uid="xxx"
+```
+
+#### URL格式说明
+
+| URL类型 | 格式 | 适用场景 |
+|---------|------|---------|
+| 搜索结果页 | `/search_result/xxx` | ✅ 推荐，可直接访问 |
+| 帖子详情页 | `/explore/xxx` | ⚠️ 需要xsec_token验证 |
+| 用户主页 | `/user/profile/xxx` | ✅ 可直接访问 |
+
+#### 常见问题
+
+| 问题 | 解决方案 |
+|------|---------|
+| 帖子返回404 | 使用搜索结果页URL而非explore页 |
+| 空数据 | 确保已登录或检查页面加载 |
+| 速度慢 | 使用chrome-devtools直接操作更稳定 |
 
 ### B站 (bilibili)
+
+#### OpenCLI命令
 ```bash
 opencli bilibili hot --limit 10              # 热门视频
 opencli bilibili search <关键词>              # 搜索视频
@@ -39,34 +93,58 @@ opencli bilibili ranking                    # 排行榜
 opencli bilibili download <bvid>             # 下载视频（需yt-dlp）
 ```
 
+#### Chrome DevTools 备用方案
+
+```bash
+# 搜索
+chrome-devtools navigate_page url="https://search.bilibili.com/all?keyword=关键词"
+
+# 热门榜
+chrome-devtools navigate_page url="https://www.bilibili.com/v/popular/rank/all"
+```
+
 ### 知乎 (zhihu)
+
+#### OpenCLI命令
 ```bash
 opencli zhihu hot                           # 热榜
 opencli zhihu search <关键词>               # 搜索
 opencli zhihu download <url>                # 下载文章为Markdown
 ```
 
-### 小红书 (xiaohongshu)
+#### Chrome DevTools 备用方案
+
 ```bash
-opencli xiaohongshu search <关键词>        # 搜索
-opencli xiaohongshu feed                    # 推荐 feed
-opencli xiaohongshu user <user_id>          # 用户信息
-opencli xiaohongshu download <note_id>      # 下载图片/视频
-opencli xiaohongshu notifications          # 通知
+# 热榜
+chrome-devtools navigate_page url="https://www.zhihu.com/hot"
+
+# 搜索
+chrome-devtools navigate_page url="https://www.zhihu.com/search?type=content&q=关键词"
 ```
 
+#### 注意事项
+- 知乎有时需要登录才能查看完整内容
+- 验证码处理建议使用手动模式
+
 ### 微博 (weibo)
+
+#### OpenCLI命令
 ```bash
 opencli weibo hot                           # 热搜
 opencli weibo search <关键词>              # 搜索
 ```
 
-### 贴吧 (tieba)
+#### Chrome DevTools 备用方案
+
 ```bash
-opencli tieba hot                           # 热门帖子
-opencli tieba posts <forum>                # 帖子列表
-opencli tieba search <关键词>              # 搜索
+# 热搜榜
+chrome-devtools navigate_page url="https://s.weibo.com/top/summary"
+
+# 搜索
+chrome-devtools navigate_page url="https://s.weibo.com/weibo?q=关键词"
 ```
+
+---
 
 ## 国际平台
 
@@ -77,8 +155,8 @@ opencli twitter search <关键词>            # 搜索
 opencli twitter timeline                   # 时间线
 opencli twitter profile <user>             # 用户资料
 opencli twitter bookmarks                  # 书签
-opencli twitter post <text>               # 发推
-opencli twitter download <user>           # 下载媒体
+opencli twitter post <text>              # 发推
+opencli twitter download <user>          # 下载媒体
 ```
 
 ### Reddit
@@ -87,19 +165,19 @@ opencli reddit hot                         # 热门
 opencli reddit frontpage                  # 首页
 opencli reddit popular                    # 精华
 opencli reddit search <关键词>            # 搜索
-opencli reddit subreddit <name>            # 子版块
+opencli reddit subreddit <name>           # 子版块
 opencli reddit user <username>           # 用户
 ```
 
 ### Hacker News
 ```bash
 opencli hackernews top                     # Top故事
-opencli hackernews new                     # 最新
+opencli hackernews new                    # 最新
 opencli hackernews best                   # 最佳
-opencli hackernews ask                    # Ask HN
-opencli hackernews show                   # Show HN
-opencli hackernews jobs                   # 招聘
-opencli hackernews user <username>        # 用户
+opencli hackernews ask                   # Ask HN
+opencli hackernews show                  # Show HN
+opencli hackernews jobs                  # 招聘
+opencli hackernews user <username>       # 用户
 ```
 
 ### YouTube
@@ -120,13 +198,15 @@ opencli spotify search <关键词>           # 搜索
 opencli spotify queue                    # 播放队列
 ```
 
+---
+
 ## 桌面应用
 
 需要CDP连接：
 ```bash
 opencli cursor status                     # Cursor IDE状态
 opencli cursor send "<prompt>"           # 发送prompt
-opencli cursor screenshot                 # 截图
+opencli cursor screenshot                # 截图
 
 opencli chatgpt status                  # ChatGPT状态
 opencli chatgpt send "<prompt>"        # 发送prompt
@@ -136,43 +216,22 @@ opencli notion read <page_id>           # 读取页面
 opencli notion write <page_id> "<text>" # 写入页面
 ```
 
-## 外部CLI枢纽
-
-```bash
-opencli gh pr list --limit 5            # GitHub CLI
-opencli docker ps                        # Docker
-opencli vercel deploy                   # Vercel
-opencli obsidian search <关键词>         # Obsidian
-```
-
-## 注册自定义CLI
-
-```bash
-opencli register <name>                  # 注册本地CLI
-opencli list                            # 查看包括自定义命令
-```
-
-## 插件
-
-```bash
-opencli plugin install <plugin>          # 安装插件
-opencli plugin list                     # 列出插件
-opencli plugin update <plugin>          # 更新插件
-opencli plugin uninstall <plugin>       # 卸载插件
-```
+---
 
 ## 退出码
 
-| 码 | 含义 |
-|----|------|
-| 0 | 成功 |
-| 1 | 通用错误 |
-| 2 | 用法错误 |
-| 66 | 空结果 |
-| 69 | 扩展未连接 |
-| 75 | 超时 |
-| 77 | 需要登录 |
-| 78 | 配置错误 |
+| 码 | 含义 | 解决方案 |
+|----|------|---------|
+| 0 | 成功 | - |
+| 1 | 通用错误 | 查看错误信息 |
+| 2 | 用法错误 | 检查命令语法 |
+| 66 | 空结果 | 可能需要登录或等待加载 |
+| 69 | 扩展未连接 | 运行`python scripts/diagnostic.py`诊断 |
+| 75 | 超时 | 重试或使用chrome-devtools |
+| 77 | 需要登录 | 登录目标网站 |
+| 78 | 配置错误 | 检查chrome扩展状态 |
+
+---
 
 ## AI Agent工作流
 
@@ -190,17 +249,70 @@ opencli generate <url> --goal "<目标>"
 opencli cascade <url>
 ```
 
+---
+
 ## 常见问题
 
-**扩展未连接**
+### 扩展未连接
 ```bash
-opencli doctor  # 检查状态
-# 确保Chrome已打开且扩展已激活
+# 详细诊断
+python scripts/diagnostic.py
+
+# 快速检查
+opencli doctor
 ```
 
-**返回空数据**
-- 检查Chrome是否已登录目标网站
-- 尝试刷新登录状态
+### 返回空数据
+```bash
+# 查看平台特定的备用方案
+python scripts/fallback_manager.py xiaohongshu
+python scripts/fallback_manager.py bilibili
+python scripts/fallback_manager.py zhihu
+```
 
-**Windows路径问题**
-- 确保使用正确的BV号格式（BV开头）
+### 高反爬网站
+```bash
+# 小红书等高反爬平台建议使用chrome-devtools
+chrome-devtools navigate_page url="https://www.xiaohongshu.com/search_result?keyword=关键词"
+chrome-devtools take_snapshot
+```
+
+### Windows路径问题
+```bash
+# 确保使用正确的BV号格式（BV开头）
+# 例如: BV1xx411c7mD
+```
+
+---
+
+## 反爬强度对照表
+
+| 平台 | 反爬等级 | 推荐工具 | 备注 |
+|------|---------|---------|------|
+| 小红书 | 🔴 高 | Chrome DevTools | 搜索结果页URL更稳定 |
+| B站 | 🔴 高 | Chrome DevTools | 需处理登录验证 |
+| 知乎 | 🔴 高 | Chrome DevTools | 可能需要验证码 |
+| 微博 | 🔴 高 | Chrome DevTools | 热搜需登录 |
+| Twitter | 🟡 中 | Playwright | 较稳定 |
+| Reddit | 🔵 低 | Agent-browser | 最易抓取 |
+| HN | 🔵 低 | Agent-browser | 最易抓取 |
+| YouTube | 🟡 中 | Playwright | 较稳定 |
+
+---
+
+## 工具选择决策树
+
+```
+开始
+  │
+  ├─ 扩展已连接？
+  │   └─ 是 → 使用OpenCLI命令
+  │   └─ 否 → 继续
+  │
+  ├─ 平台反爬等级？
+  │   ├─ 低（HN, Reddit）→ Agent-browser
+  │   ├─ 中（Twitter, YouTube）→ Playwright
+  │   └─ 高（中国平台）→ Chrome DevTools
+  │
+  └─ 使用对应工具的操作命令
+```
