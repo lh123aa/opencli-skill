@@ -11,15 +11,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# 数据目录
-DATA_DIR = Path("C:/Users/49046/.config/opencode/skills/opencli/data")
-REPORTS_DIR = DATA_DIR / "iteration" / "reports"
-PENDING_DIR = DATA_DIR / "iteration" / "reports" / "pending"
-COMPLETED_DIR = DATA_DIR / "iteration" / "reports" / "completed"
+# 跨平台兼容
+import sys
 
-REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-PENDING_DIR.mkdir(parents=True, exist_ok=True)
-COMPLETED_DIR.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+from config import config
+
 
 # 严重程度枚举
 SEVERITY_CRITICAL = "critical"
@@ -90,6 +87,16 @@ class TaskReporter:
 
     def __init__(self):
         self._report_id = self._generate_report_id()
+        self._init_dirs()
+
+    def _init_dirs(self):
+        """初始化目录"""
+        self.reports_dir = config.iteration_dir / "reports"
+        self.pending_dir = self.reports_dir / "pending"
+        self.completed_dir = self.reports_dir / "completed"
+        self.reports_dir.mkdir(parents=True, exist_ok=True)
+        self.pending_dir.mkdir(parents=True, exist_ok=True)
+        self.completed_dir.mkdir(parents=True, exist_ok=True)
 
     def _generate_report_id(self) -> str:
         """生成报告ID"""
@@ -297,11 +304,11 @@ class TaskReporter:
         content = self.generate_markdown(report)
 
         if save_to == "pending":
-            filepath = PENDING_DIR / f"{self._report_id}.md"
+            filepath = self.pending_dir / f"{self._report_id}.md"
         elif save_to == "completed":
-            filepath = COMPLETED_DIR / f"{self._report_id}.md"
+            filepath = self.completed_dir / f"{self._report_id}.md"
         else:
-            filepath = REPORTS_DIR / f"{self._report_id}.md"
+            filepath = self.reports_dir / f"{self._report_id}.md"
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
@@ -311,7 +318,7 @@ class TaskReporter:
     def get_pending_reports(self) -> List[Dict]:
         """获取待处理报告列表"""
         reports = []
-        for f in PENDING_DIR.glob("*.md"):
+        for f in self.pending_dir.glob("*.md"):
             stat = f.stat()
             reports.append(
                 {
@@ -324,10 +331,10 @@ class TaskReporter:
 
     def mark_as_completed(self, report_id: str) -> bool:
         """标记报告为已完成"""
-        pending_file = PENDING_DIR / f"{report_id}.md"
+        pending_file = self.pending_dir / f"{report_id}.md"
         if pending_file.exists():
             # 移动到completed目录
-            completed_file = COMPLETED_DIR / f"{report_id}.md"
+            completed_file = self.completed_dir / f"{report_id}.md"
             pending_file.rename(completed_file)
             return True
         return False
@@ -335,8 +342,6 @@ class TaskReporter:
 
 # CLI接口
 if __name__ == "__main__":
-    import sys
-
     reporter = TaskReporter()
 
     if len(sys.argv) < 2:
@@ -345,7 +350,7 @@ if __name__ == "__main__":
         print("  create <task_name> <description>   - 创建报告")
         print("  pending                          - 查看待处理报告")
         print("  complete <report_id>            - 标记为已完成")
-        print("  generate                        - 生成示例报告")
+        print("  generate                         - 生成示例报告")
         sys.exit(1)
 
     action = sys.argv[1]

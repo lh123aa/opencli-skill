@@ -12,6 +12,12 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
 
+# 跨平台兼容
+import sys
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+from config import config, is_windows
+
 
 class FallbackTool(Enum):
     """备用工具枚举"""
@@ -54,7 +60,7 @@ class FallbackManager:
     }
 
     def __init__(self):
-        self.data_dir = Path("C:/Users/49046/.config/opencode/skills/opencli/data")
+        self.data_dir = config.data_dir
         self.fallback_log = self.data_dir / "fallback_log.json"
 
     def check_extension_status(self) -> Dict:
@@ -62,7 +68,11 @@ class FallbackManager:
         # 尝试执行一个简单的opencli命令来检测扩展
         try:
             result = subprocess.run(
-                ["opencli", "doctor"], capture_output=True, text=True, timeout=10
+                ["opencli", "doctor"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                shell=is_windows(),
             )
 
             if (
@@ -108,11 +118,11 @@ class FallbackManager:
 
         # 检查平台特定配置
         if platform_lower in self.PLATFORM_ANTI_CRAWLING:
-            config = self.PLATFORM_ANTI_CRAWLING[platform_lower]
+            config_platform = self.PLATFORM_ANTI_CRAWLING[platform_lower]
             return self._create_recommendation(
-                tool=config["tool"],
+                tool=config_platform["tool"],
                 confidence=0.9,
-                reason=f"{platform} has {config['level']} anti-crawling level",
+                reason=f"{platform} has {config_platform['level']} anti-crawling level",
                 platform=platform_lower,
             )
 
@@ -238,7 +248,7 @@ click ref="@e1"  # 使用快照中的引用
             try:
                 with open(self.fallback_log, "r", encoding="utf-8") as f:
                     events = json.load(f)
-            except:
+            except Exception:
                 events = []
 
         events.append(
@@ -271,7 +281,7 @@ click ref="@e1"  # 使用快照中的引用
                 stats["by_tool"][tool] = stats["by_tool"].get(tool, 0) + 1
 
             return stats
-        except:
+        except Exception:
             return {"total_fallbacks": 0, "by_tool": {}}
 
     def print_fallback_guide(self, platform: str):
@@ -318,8 +328,6 @@ click ref="@e1"  # 使用快照中的引用
 
 # CLI接口
 if __name__ == "__main__":
-    import sys
-
     manager = FallbackManager()
 
     if len(sys.argv) < 2:

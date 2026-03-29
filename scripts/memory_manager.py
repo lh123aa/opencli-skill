@@ -12,73 +12,78 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# 数据目录
-DATA_DIR = Path("C:/Users/49046/.config/opencode/skills/opencli/data")
-MEMORY_DIR = DATA_DIR / "memory"
-MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+# 跨平台兼容
+import sys
 
-# 文件路径
-SESSION_FILE = MEMORY_DIR / "session-memory.json"
-PREFERENCES_FILE = MEMORY_DIR / "user-preferences.yaml"
-KNOWLEDGE_FILE = MEMORY_DIR / "knowledge-base.md"
+sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+from config import config
 
-# 默认偏好
-DEFAULT_PREFERENCES = {
-    "default_format": "table",
-    "常用平台": [],
-    "常用命令": [],
-    "默认限制": 10,
-    "输出目录": str(DATA_DIR / "outputs"),
-    "auto_iteration_report": True,
-}
+
+# 文件路径（使用config单例）
+def _get_memory_dir() -> Path:
+    """获取记忆目录"""
+    return config.memory_dir
 
 
 class MemoryManager:
     """记忆管理器"""
 
     def __init__(self):
+        self.memory_dir = _get_memory_dir()
         self._init_files()
 
     def _init_files(self):
         """初始化记忆文件"""
         # 会话记忆
-        if not SESSION_FILE.exists():
+        if not self.session_file.exists():
             self._save_session(
                 {"operations": [], "session_start": datetime.now().isoformat()}
             )
 
         # 用户偏好
-        if not PREFERENCES_FILE.exists():
+        if not self.preferences_file.exists():
             self._save_preferences(DEFAULT_PREFERENCES.copy())
 
         # 知识库
-        if not KNOWLEDGE_FILE.exists():
+        if not self.knowledge_file.exists():
             self._init_knowledge_base()
+
+    @property
+    def session_file(self) -> Path:
+        return self.memory_dir / "session-memory.json"
+
+    @property
+    def preferences_file(self) -> Path:
+        return self.memory_dir / "user-preferences.yaml"
+
+    @property
+    def knowledge_file(self) -> Path:
+        return self.memory_dir / "knowledge-base.md"
 
     def _load_session(self) -> Dict:
         """加载会话记忆"""
         try:
-            with open(SESSION_FILE, "r", encoding="utf-8") as f:
+            with open(self.session_file, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except:
+        except Exception:
             return {"operations": [], "session_start": datetime.now().isoformat()}
 
     def _save_session(self, data: Dict):
         """保存会话记忆"""
-        with open(SESSION_FILE, "w", encoding="utf-8") as f:
+        with open(self.session_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def _load_preferences(self) -> Dict:
         """加载用户偏好"""
         try:
-            with open(PREFERENCES_FILE, "r", encoding="utf-8") as f:
+            with open(self.preferences_file, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f) or DEFAULT_PREFERENCES.copy()
-        except:
+        except Exception:
             return DEFAULT_PREFERENCES.copy()
 
     def _save_preferences(self, data: Dict):
         """保存用户偏好"""
-        with open(PREFERENCES_FILE, "w", encoding="utf-8") as f:
+        with open(self.preferences_file, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
     def _init_knowledge_base(self):
@@ -108,7 +113,7 @@ class MemoryManager:
 暂无记录。
 
 """
-        with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
+        with open(self.knowledge_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     # ========== 会话记忆 ==========
@@ -204,7 +209,7 @@ class MemoryManager:
     ) -> None:
         """添加知识到知识库"""
         # 读取现有知识库
-        with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
+        with open(self.knowledge_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # 更新抓取记录
@@ -231,7 +236,7 @@ class MemoryManager:
         # 更新平台统计
         content = self._update_platform_stats(content, platform)
 
-        with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
+        with open(self.knowledge_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     def _update_platform_stats(self, content: str, platform: str) -> str:
@@ -240,8 +245,6 @@ class MemoryManager:
 
         if platform in content:
             # 增加计数
-            import re
-
             pattern = rf"(\| {re.escape(platform)} \|)(\d+)(\|)"
             match = re.search(pattern, content)
             if match:
@@ -263,27 +266,23 @@ class MemoryManager:
         """查询知识库"""
         results = []
         try:
-            with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
+            with open(self.knowledge_file, "r", encoding="utf-8") as f:
                 content = f.read()
-
-            import re
 
             # 简单关键词匹配
             sections = re.split(r"### ", content)
             for section in sections:
                 if keyword.lower() in section.lower():
                     results.append(section.strip())
-        except:
+        except Exception:
             pass
         return results
 
     def get_knowledge_stats(self) -> Dict:
         """获取知识库统计"""
         try:
-            with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
+            with open(self.knowledge_file, "r", encoding="utf-8") as f:
                 content = f.read()
-
-            import re
 
             stats = {}
             for match in re.finditer(r"\|\s*(\w+)\s*\|\s*(\d+)\s*\|", content):
@@ -291,7 +290,7 @@ class MemoryManager:
                 if platform != "-":
                     stats[platform] = int(count)
             return stats
-        except:
+        except Exception:
             return {}
 
     # ========== 记忆系统状态 ==========
@@ -312,10 +311,19 @@ class MemoryManager:
         }
 
 
+# 默认偏好
+DEFAULT_PREFERENCES = {
+    "default_format": "table",
+    "常用平台": [],
+    "常用命令": [],
+    "默认限制": 10,
+    "输出目录": str(config.outputs_dir),
+    "auto_iteration_report": True,
+}
+
+
 # CLI接口
 if __name__ == "__main__":
-    import sys
-
     manager = MemoryManager()
 
     if len(sys.argv) < 2:

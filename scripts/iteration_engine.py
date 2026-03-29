@@ -13,17 +13,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, asdict
 
-# 数据目录
-DATA_DIR = Path("C:/Users/49046/.config/opencode/skills/opencli/data")
-ITERATION_DIR = DATA_DIR / "iteration"
-REPORTS_DIR = ITERATION_DIR / "reports"
-ITERATION_DIR.mkdir(parents=True, exist_ok=True)
-REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+# 跨平台兼容
+import sys
 
-# 文件路径
-PROBLEMS_FILE = ITERATION_DIR / "problems.json"
-IMPROVEMENTS_FILE = ITERATION_DIR / "improvements.md"
-WORKFLOWS_FILE = ITERATION_DIR / "workflows.yaml"
+sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+from config import config
 
 # 问题优先级
 PRIORITY_CRITICAL = "critical"
@@ -62,36 +56,53 @@ class IterationEngine:
     """迭代引擎"""
 
     def __init__(self):
+        self.iteration_dir = config.iteration_dir
+        self.reports_dir = self.iteration_dir / "reports"
         self._init_files()
         self._problem_counter = self._load_problem_counter()
 
     def _init_files(self):
         """初始化文件"""
         # 问题记录
-        if not PROBLEMS_FILE.exists():
+        if not self.problems_file.exists():
             self._save_problems({"problems": [], "counter": 0})
 
         # 改进建议
-        if not IMPROVEMENTS_FILE.exists():
+        if not self.improvements_file.exists():
             self._init_improvements()
 
         # 工作流
-        if not WORKFLOWS_FILE.exists():
+        if not self.workflows_file.exists():
             self._save_workflows({"workflows": []})
 
+    @property
+    def problems_file(self) -> Path:
+        return self.iteration_dir / "problems.json"
+
+    @property
+    def improvements_file(self) -> Path:
+        return self.iteration_dir / "improvements.md"
+
+    @property
+    def workflows_file(self) -> Path:
+        return self.iteration_dir / "workflows.yaml"
+
     def _load_problems(self) -> Dict:
-        with open(PROBLEMS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(self.problems_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {"problems": [], "counter": 0}
 
     def _save_problems(self, data: Dict):
-        with open(PROBLEMS_FILE, "w", encoding="utf-8") as f:
+        with open(self.problems_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def _load_problem_counter(self) -> int:
         try:
             data = self._load_problems()
             return data.get("counter", 0)
-        except:
+        except Exception:
             return 0
 
     def _init_improvements(self):
@@ -126,15 +137,18 @@ class IterationEngine:
 | - | - | - | - |
 
 """
-        with open(IMPROVEMENTS_FILE, "w", encoding="utf-8") as f:
+        with open(self.improvements_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     def _load_workflows(self) -> Dict:
-        with open(WORKFLOWS_FILE, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or {"workflows": []}
+        try:
+            with open(self.workflows_file, "r", encoding="utf-8") as f:
+                return yaml.safe_load(f) or {"workflows": []}
+        except Exception:
+            return {"workflows": []}
 
     def _save_workflows(self, data: Dict):
-        with open(WORKFLOWS_FILE, "w", encoding="utf-8") as f:
+        with open(self.workflows_file, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
     # ========== 问题管理 ==========
@@ -201,11 +215,11 @@ class IterationEngine:
         problems = data["problems"]
 
         if status:
-            problems = [p for p in problems if p["状态"] == status]
+            problems = [p for p in problems if p.get("状态") == status]
         if platform:
-            problems = [p for p in problems if p["平台"] == platform]
+            problems = [p for p in problems if p.get("平台") == platform]
         if priority:
-            problems = [p for p in problems if p["优先级"] == priority]
+            problems = [p for p in problems if p.get("优先级") == priority]
 
         return problems
 
@@ -216,11 +230,11 @@ class IterationEngine:
 
         stats = {
             "total": len(problems),
-            "open": len([p for p in problems if p["状态"] == STATUS_OPEN]),
+            "open": len([p for p in problems if p.get("状态") == STATUS_OPEN]),
             "in_progress": len(
-                [p for p in problems if p["状态"] == STATUS_IN_PROGRESS]
+                [p for p in problems if p.get("状态") == STATUS_IN_PROGRESS]
             ),
-            "resolved": len([p for p in problems if p["状态"] == STATUS_RESOLVED]),
+            "resolved": len([p for p in problems if p.get("状态") == STATUS_RESOLVED]),
             "by_platform": {},
             "by_priority": {
                 PRIORITY_CRITICAL: 0,
@@ -231,9 +245,11 @@ class IterationEngine:
         }
 
         for p in problems:
-            platform = p["平台"]
+            platform = p.get("平台", "unknown")
             stats["by_platform"][platform] = stats["by_platform"].get(platform, 0) + 1
-            stats["by_priority"][p["优先级"]] += 1
+            priority = p.get("优先级", PRIORITY_LOW)
+            if priority in stats["by_priority"]:
+                stats["by_priority"][priority] += 1
 
         return stats
 
@@ -279,7 +295,7 @@ class IterationEngine:
         optimization: str = "",
     ) -> None:
         """添加改进建议"""
-        with open(IMPROVEMENTS_FILE, "r", encoding="utf-8") as f:
+        with open(self.improvements_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -309,14 +325,14 @@ class IterationEngine:
                     "## 待处理建议\n\n暂无建议。", f"## 待处理建议\n\n{new_entry}"
                 )
 
-        with open(IMPROVEMENTS_FILE, "w", encoding="utf-8") as f:
+        with open(self.improvements_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     def add_command_optimization(
         self, command: str, before: str, after: str, effect: str
     ) -> None:
         """记录命令优化"""
-        with open(IMPROVEMENTS_FILE, "r", encoding="utf-8") as f:
+        with open(self.improvements_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -329,7 +345,7 @@ class IterationEngine:
             content,
         )
 
-        with open(IMPROVEMENTS_FILE, "w", encoding="utf-8") as f:
+        with open(self.improvements_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     # ========== 工作流学习 ==========
@@ -372,7 +388,7 @@ class IterationEngine:
         workflows = data["workflows"]
 
         if platform:
-            workflows = [w for w in workflows if platform in w["platforms"]]
+            workflows = [w for w in workflows if platform in w.get("platforms", [])]
         if tag:
             workflows = [w for w in workflows if tag in w.get("tags", [])]
 
@@ -412,7 +428,7 @@ class IterationEngine:
 
     # ========== 报告生成 ==========
 
-    def generate_report(self, session_summary: Dict = None) -> str:
+    def generate_report(self, session_summary: Dict = None) -> tuple:
         """生成迭代报告"""
         report_id = f"ITER-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
@@ -475,7 +491,7 @@ class IterationEngine:
 
         # 读取改进建议
         try:
-            with open(IMPROVEMENTS_FILE, "r", encoding="utf-8") as f:
+            with open(self.improvements_file, "r", encoding="utf-8") as f:
                 imp_content = f.read()
 
             # 提取待处理建议
@@ -486,7 +502,7 @@ class IterationEngine:
                     report += f"- {p}\n"
             else:
                 report += "暂无待处理建议。\n"
-        except:
+        except Exception:
             report += "无法读取改进建议。\n"
 
         report += f"""
@@ -573,7 +589,8 @@ class IterationEngine:
 """
 
         # 保存报告
-        report_file = REPORTS_DIR / f"{report_id}.md"
+        self.reports_dir.mkdir(parents=True, exist_ok=True)
+        report_file = self.reports_dir / f"{report_id}.md"
         with open(report_file, "w", encoding="utf-8") as f:
             f.write(report)
 
@@ -584,15 +601,15 @@ class IterationEngine:
         return {
             "problem_stats": self.get_problem_stats(),
             "workflow_stats": self.get_workflow_stats(),
-            "reports_count": len(list(REPORTS_DIR.glob("*.md"))),
+            "reports_count": len(list(self.reports_dir.glob("*.md")))
+            if self.reports_dir.exists()
+            else 0,
             "last_report": None,
         }
 
 
 # CLI接口
 if __name__ == "__main__":
-    import sys
-
     engine = IterationEngine()
 
     if len(sys.argv) < 2:

@@ -3,48 +3,40 @@ name: opencli
 description: OpenCLI命令行工具集成 - 将任何网站、Electron应用或本地工具转换为命令行界面。支持66+平台（中国：B站、知乎、小红书、微博等；国际：Twitter、Reddit、HackerNews等）和桌面应用控制（Cursor、ChatGPT、Notion等）。当用户需要：抓取社交媒体数据（评论、热榜、搜索结果）、获取平台热门内容、控制桌面应用、执行自动化CLI操作、获取结构化JSON/CSV数据、或任何涉及浏览器自动化的任务时使用此skill。此skill具备记忆和自我迭代功能，能记住用户偏好、学习工作流、记录问题并持续优化。
 ---
 
-# OpenCLI v2.0
+# OpenCLI v2.2
 
-通用CLI工具，通过预置适配器控制浏览器访问各类网站，获取结构化数据。**具备记忆和自我迭代能力，支持自动降级和增强诊断**。
+通用浏览器自动化工具，通过MCP（Model Context Protocol）工具控制浏览器访问各类网站，获取结构化数据。**具备记忆和自我迭代能力，支持自动降级和增强诊断**。
 
-## 核心能力
+## ⚠️ 重要说明
 
-### 1. 数据抓取
+**本skill不提供独立的CLI命令**。它通过以下方式工作：
+1. **Chrome DevTools MCP** - 主要工具，直接控制Chrome浏览器
+2. **Agent Browser MCP** - 轻量级替代方案
+3. **Playwright MCP** - 跨浏览器支持
+4. **Python辅助脚本** - 诊断、记忆、迭代管理
+
+### 数据抓取工作流
+
 ```bash
-opencli bilibili hot --limit 10          # B站热搜
-opencli zhihu hot -f json                # 知乎热榜
-opencli hackernews top                   # HN热门
-opencli reddit hot                       # Reddit热门
-opencli twitter trending                 # Twitter趋势
-```
+# 1. 使用 Chrome DevTools MCP 导航到目标页面
+chrome-devtools navigate_page url="https://www.xiaohongshu.com/search_result?keyword=卡塔尔旅游"
 
-### 2. 评论抓取
-```bash
-opencli bilibili comments <bvid> --limit 20   # B站评论
-```
+# 2. 获取页面快照
+chrome-devtools take_snapshot
 
-### 3. 内容下载
-```bash
-opencli bilibili download <bvid>              # 视频（需yt-dlp）
-opencli zhihu download <url>                  # 文章为Markdown
-opencli xiaohongshu download <note_id>       # 图片/视频
-```
+# 3. 点击帖子或执行其他交互
+chrome-devtools click uid="xxx"
 
-### 4. 输出格式
-```bash
-opencli <command> -f json     # JSON（程序处理）
-opencli <command> -f yaml     # YAML
-opencli <command> -f csv      # CSV
-opencli <command> -f table    # 表格（默认）
+# 4. 使用其他MCP工具进行截图、数据提取等
 ```
 
 ---
 
 ## 🔍 增强诊断系统
 
-### doctor 命令 (增强版)
+### doctor 命令
 ```bash
-# 详细诊断（推荐）
+# 详细诊断
 python scripts/diagnostic.py
 
 # JSON格式输出
@@ -52,18 +44,17 @@ python scripts/diagnostic.py --json
 ```
 
 **诊断项目**：
-- ✅ Chrome浏览器安装状态
+- ✅ Chrome浏览器安装状态（跨平台自动检测）
 - ✅ Browser Bridge扩展连接状态
 - ✅ Node.js环境
-- ✅ OpenCLI CLI可用性
 - ✅ 网络连接状态
 - ✅ 各平台可达性
 
 **输出示例**：
 ```
-============================================================
+========================================================
 🔍 OpenCLI 诊断报告
-============================================================
+========================================================
 时间: 2026-03-30T12:00:00
 
 📊 摘要: 5 ✅ | 2 ⚠️ | 1 ❌
@@ -73,16 +64,13 @@ python scripts/diagnostic.py --json
 
 ⚠️ Browser Bridge扩展
    请手动确认扩展已启用
-   修复: 1. 打开 Chrome
-         2. 访问 chrome://extensions/
-         3. 确认 'OpenCLI Browser Bridge' 已启用
 ```
 
 ---
 
 ## 🔄 自动降级机制
 
-当Chrome扩展不可用时，自动提供替代方案：
+当首选工具不可用时，自动提供替代方案：
 
 ```bash
 # 查看特定平台的降级指南
@@ -121,25 +109,22 @@ python scripts/fallback_manager.py xiaohongshu status
 ### 会话记忆
 - 自动记录每次命令执行
 - 包含：命令、平台、结果、状态
-- 存储：`session-memory.json`
 
 ### 用户偏好
 - 常用平台、默认格式、输出目录
 - 跨会话持久化
-- 存储：`user-preferences.yaml`
 
 ### 知识库
 - 记录已抓取的数据摘要
 - 平台使用统计
-- 存储：`knowledge-base.md`
 
 ### 记忆脚本
 ```bash
 python scripts/memory_manager.py status                    # 查看记忆状态
-python scripts/memory_manager.py history                 # 查看会话历史
-python scripts/memory_manager.py get-prefs              # 获取用户偏好
-python scripts/memory_manager.py query <关键词>          # 查询知识库
-python scripts/memory_manager.py clear-session           # 清空会话记忆
+python scripts/memory_manager.py history                   # 查看会话历史
+python scripts/memory_manager.py get-prefs                 # 获取用户偏好
+python scripts/memory_manager.py query <关键词>            # 查询知识库
+python scripts/memory_manager.py clear-session              # 清空会话记忆
 ```
 
 ---
@@ -160,39 +145,10 @@ python scripts/iteration_engine.py list-problems [状态] [平台]
 python scripts/iteration_engine.py update-status <id> <状态> [解决方案]
 ```
 
-### 工作流学习
-```bash
-# 学习工作流
-python scripts/iteration_engine.py learn-workflow <名称> <步骤JSON> <平台列表>
-
-# 查看工作流
-python scripts/iteration_engine.py list-workflows [平台]
-```
-
 ### 生成报告
 ```bash
 python scripts/iteration_engine.py generate-report
-# 生成迭代报告，包含：执行摘要、问题统计、改进建议、下一步行动
 ```
-
----
-
-## 完整工作流
-
-### 执行任务
-1. 用户提出需求（如：抓取B站热门评论）
-2. 执行opencli命令
-3. **自动记录**：记忆系统保存操作，知识库更新统计
-
-### 遇到问题
-1. 执行失败 → **自动检测扩展状态**
-2. 扩展不可用 → **自动推荐备用工具**
-3. 任务结束时 **生成迭代报告**
-
-### 持续优化
-1. 查看报告 → 了解问题和建议
-2. 处理问题 → 更新问题状态
-3. 学习新工作流 → 提高效率
 
 ---
 
@@ -224,94 +180,16 @@ python scripts/iteration_engine.py generate-report
         └─ 拒绝 → 记录报告到 iteration/reports/ 待处理
 ```
 
-### 报告模板
+### 任务报告脚本
+```bash
+# 创建报告
+python scripts/task_reporter.py create <任务名> <描述>
 
-```markdown
-## 📋 任务完成报告
+# 查看待处理报告
+python scripts/task_reporter.py pending
 
-**任务**：xxx
-**时间**：xxx
-**状态**：✅完成 | ⚠️部分完成 | ❌失败
-
----
-
-### ✅ 完成情况
-
-- [x] 已完成项1
-- [x] 已完成项2
-- [ ] 未完成项1（原因：xxx）
-
-### 📊 数据统计
-
-| 类型 | 数量 |
-|------|------|
-| 抓取帖子 | xx个 |
-| 获取评论 | xx条 |
-| 保存文件 | xx个 |
-
-### ⚠️ 遇到的问题
-
-| 问题 | 严重程度 | 原因 |
-|------|---------|------|
-| 问题1 | 🔴高 | 工具限制 |
-| 问题2 | 🟡中 | 设计不足 |
-
-### 🔧 迭代方案
-
-**短期（本次可修复）**：
-- 修复项1
-
-**中期（需要改skill）**：
-- 新增能力1
-
-**长期（架构优化）**：
-- 架构调整1
-
----
-
-**需要我升级迭代吗？允许后立即执行。**
-```
-
-### 用户响应处理
-
-| 用户响应 | 处理方式 |
-|---------|---------|
-| 允许升级 | 修改skill → commit → push到GitHub |
-| 拒绝 | 记录到 `iteration/reports/pending/` |
-| 超时无响应 | 自动记录到 `iteration/reports/pending/` |
-
-### 记录文件位置
-
-```
-iteration/reports/
-├── pending/              # 待处理报告（用户拒绝或超时）
-│   └── TASK-YYYYMMDD-HHMMSS.md
-├── completed/           # 已完成升级的报告
-└── reports/            # 自动生成的迭代报告
-```
-
----
-
-### 示例场景
-
-**场景：用户要求抓取小红书10个帖子评论**
-
-```
-✅ 完成情况：
-- [x] 抓取10个帖子
-- [x] 获取每个帖子的评论
-- [x] 保存到markdown文件
-- [ ] 帖子5-10评论不完整（部分需登录）
-
-⚠️ 遇到的问题：
-- 帖子详情页返回404（URL格式问题）
-- 部分评论需要登录才能查看
-
-🔧 迭代方案：
-- 短期：添加URL格式自动检测和备用格式尝试
-- 中期：为高反爬平台添加备用方案
-
-需要我升级迭代吗？允许后立即执行。
+# 标记为已完成
+python scripts/task_reporter.py complete <报告ID>
 ```
 
 ---
@@ -333,35 +211,63 @@ iteration/reports/
 └── outputs/                  # 下载的文件
 ```
 
+### 自定义数据目录
+
+可以通过环境变量自定义数据目录：
+```bash
+# Linux/macOS
+export OPENCLI_DATA_DIR="/path/to/data"
+
+# Windows
+set OPENCLI_DATA_DIR=C:\path\to\data
+```
+
 ---
 
 ## 前置条件
 
 1. Chrome浏览器已安装并打开
-2. Browser Bridge扩展已启用
+2. Browser Bridge扩展已启用（可选）
 
 ```bash
 # 详细诊断（推荐）
 python scripts/diagnostic.py
-
-# 快速检查
-opencli doctor
 ```
 
 ---
 
 ## 平台速查
 
-| 平台 | 命令前缀 | 反爬等级 | 推荐工具 |
-|------|----------|---------|---------|
-| B站 | `bilibili` | 🔴 高 | Chrome DevTools |
-| 知乎 | `zhihu` | 🔴 高 | Chrome DevTools |
-| 小红书 | `xiaohongshu` | 🔴 高 | Chrome DevTools |
-| 微博 | `weibo` | 🔴 高 | Chrome DevTools |
-| Twitter | `twitter` | 🟡 中 | Playwright |
-| Reddit | `reddit` | 🔵 低 | Agent-browser |
-| HN | `hackernews` | 🔵 低 | Agent-browser |
-| 桌面应用 | `cursor`, `chatgpt`, `notion` | - | OpenCLI |
+| 平台 | 反爬等级 | 推荐工具 | 备注 |
+|------|---------|---------|------|
+| B站 | 🔴 高 | Chrome DevTools | 需登录态 |
+| 知乎 | 🔴 高 | Chrome DevTools | 需登录态 |
+| 小红书 | 🔴 高 | Chrome DevTools | 需登录态 |
+| 微博 | 🔴 高 | Chrome DevTools | 需登录态 |
+| Twitter | 🟡 中 | Playwright | API限制 |
+| Reddit | 🔵 低 | Agent-browser | 直接可访问 |
+| HN | 🔵 低 | Agent-browser | 直接可访问 |
+| 桌面应用 | - | Agent-browser | Electron |
+
+---
+
+## MCP工具参考
+
+### Chrome DevTools MCP
+```bash
+chrome-devtools navigate_page url="https://..."    # 导航
+chrome-devtools take_snapshot                      # 获取快照
+chrome-devtools click uid="xxx"                   # 点击元素
+chrome-devtools fill uid="xxx" value="..."        # 填写表单
+chrome-devtools take_screenshot                    # 截图
+```
+
+### Agent Browser MCP
+```bash
+navigate url="https://..."                         # 导航
+snapshot                                           # 获取快照
+click ref="@e1"                                    # 使用引用点击
+```
 
 完整命令列表见 [references/commands.md](references/commands.md)
 
@@ -371,10 +277,30 @@ opencli doctor
 
 | 问题 | 解决 |
 |------|------|
-| 扩展未连接 | `python scripts/diagnostic.py` 详细诊断 |
+| 扩展未连接 | 使用 `python scripts/diagnostic.py` 详细诊断 |
 | 返回空数据 | 使用 `python scripts/fallback_manager.py <平台>` 查看备用方案 |
 | 执行失败 | 检查chrome扩展状态，或使用chrome-devtools直接操作 |
-| 高反爬网站 | 使用Chrome DevTools MCP作为备用工具 |
+| 高反爬网站 | 使用Chrome DevTools MCP作为主要工具 |
+
+---
+
+## 更新日志
+
+### v2.2 (2026-03-30)
+- ✅ 修复硬编码路径问题，使用跨平台配置模块
+- ✅ 修复subprocess跨平台兼容性问题
+- ✅ 修复Windows彩色输出兼容性问题
+- ✅ 网络检测改用Python urllib，替代curl命令
+
+### v2.1 (2026-03-29)
+- ✅ 新增主动报告机制
+- ✅ 新增任务报告生成器
+
+### v2.0 (2026-03-29)
+- ✅ 新增增强诊断系统
+- ✅ 新增自动降级机制
+- ✅ 新增记忆系统
+- ✅ 新增迭代引擎
 
 ---
 
@@ -386,3 +312,4 @@ opencli doctor
 - 增强诊断：[scripts/diagnostic.py](scripts/diagnostic.py)
 - 自动降级：[scripts/fallback_manager.py](scripts/fallback_manager.py)
 - 任务报告：[scripts/task_reporter.py](scripts/task_reporter.py)
+- 共享配置：[scripts/shared/config.py](scripts/shared/config.py)

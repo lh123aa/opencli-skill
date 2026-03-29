@@ -12,15 +12,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-
-# 彩色输出
-class Colors:
-    GREEN = "\033[92m"
-    RED = "\033[91m"
-    YELLOW = "\033[93m"
-    BLUE = "\033[94m"
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
+# 跨平台兼容
+sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+from config import (
+    Colors,
+    get_chrome_path,
+    get_null_device,
+    is_windows,
+    is_linux,
+    config,
+)
 
 
 @dataclass
@@ -69,37 +70,16 @@ class DiagnosticSystem:
 
     def _check_chrome(self):
         """检查Chrome浏览器"""
-        chrome_paths = [
-            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            "/usr/bin/google-chrome",
-        ]
+        # 使用跨平台方法查找Chrome
+        chrome_path = get_chrome_path()
 
-        found = None
-        for path in chrome_paths:
-            if Path(path).exists():
-                found = path
-                break
-
-        # 尝试通过where命令查找
-        if not found:
-            try:
-                result = subprocess.run(
-                    ["where", "chrome"], capture_output=True, text=True, timeout=5
-                )
-                if result.returncode == 0:
-                    found = result.stdout.strip().split("\n")[0]
-            except:
-                pass
-
-        if found:
+        if chrome_path:
             self.results.append(
                 DiagnosticResult(
                     name="Chrome浏览器",
                     status="pass",
-                    message=f"✅ 已安装: {found}",
-                    details=f"路径: {found}",
+                    message=f"✅ 已安装: {chrome_path}",
+                    details=f"路径: {chrome_path}",
                 )
             )
         else:
@@ -142,7 +122,11 @@ class DiagnosticSystem:
         """检查Node.js"""
         try:
             result = subprocess.run(
-                ["node", "--version"], capture_output=True, text=True, timeout=5
+                ["node", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                shell=is_windows(),  # Windows需要shell=True
             )
             if result.returncode == 0:
                 version = result.stdout.strip()
@@ -156,7 +140,7 @@ class DiagnosticSystem:
                 )
             else:
                 raise Exception("Node.js not found")
-        except:
+        except Exception:
             self.results.append(
                 DiagnosticResult(
                     name="Node.js",
@@ -170,7 +154,11 @@ class DiagnosticSystem:
         """检查opencli CLI"""
         try:
             result = subprocess.run(
-                ["opencli", "--version"], capture_output=True, text=True, timeout=5
+                ["opencli", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                shell=is_windows(),
             )
             if result.returncode == 0:
                 version = result.stdout.strip()
@@ -184,7 +172,7 @@ class DiagnosticSystem:
                 )
             else:
                 raise Exception("opencli not found")
-        except:
+        except Exception:
             self.results.append(
                 DiagnosticResult(
                     name="OpenCLI CLI",
@@ -203,24 +191,21 @@ class DiagnosticSystem:
 
         for name, url in test_urls:
             try:
-                result = subprocess.run(
-                    ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                if result.stdout.strip() == "200":
-                    self.results.append(
-                        DiagnosticResult(
-                            name=f"网络-{name}",
-                            status="pass",
-                            message=f"✅ {name} 可访问",
-                            details=f"HTTP 200",
-                        )
+                # 使用Python的urllib代替curl命令（跨平台）
+                import urllib.request
+                import urllib.error
+
+                req = urllib.request.Request(url, method="HEAD")
+                urllib.request.urlopen(req, timeout=10)
+                self.results.append(
+                    DiagnosticResult(
+                        name=f"网络-{name}",
+                        status="pass",
+                        message=f"✅ {name} 可访问",
+                        details=f"HTTP 200",
                     )
-                else:
-                    raise Exception(f"HTTP {result.stdout.strip()}")
-            except:
+                )
+            except Exception:
                 self.results.append(
                     DiagnosticResult(
                         name=f"网络-{name}",
@@ -240,37 +225,26 @@ class DiagnosticSystem:
 
         for name, url in platforms.items():
             try:
-                result = subprocess.run(
-                    ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
+                import urllib.request
+                import urllib.error
+
+                req = urllib.request.Request(url, method="HEAD")
+                urllib.request.urlopen(req, timeout=10)
+                self.results.append(
+                    DiagnosticResult(
+                        name=f"平台-{name}",
+                        status="pass",
+                        message=f"✅ {name} 可访问",
+                        details=f"URL: {url}",
+                    )
                 )
-                if result.stdout.strip() == "200":
-                    self.results.append(
-                        DiagnosticResult(
-                            name=f"平台-{name}",
-                            status="pass",
-                            message=f"✅ {name} 可访问",
-                            details=f"URL: {url}",
-                        )
-                    )
-                else:
-                    self.results.append(
-                        DiagnosticResult(
-                            name=f"平台-{name}",
-                            status="warn",
-                            message=f"⚠️ {name} 访问异常",
-                            fix_suggestion=f"可能需要登录或存在区域限制\nURL: {url}",
-                        )
-                    )
-            except:
+            except Exception:
                 self.results.append(
                     DiagnosticResult(
                         name=f"平台-{name}",
                         status="warn",
-                        message=f"⚠️ {name} 无法访问",
-                        fix_suggestion=f"检查网络设置\nURL: {url}",
+                        message=f"⚠️ {name} 访问异常",
+                        fix_suggestion=f"可能需要登录或存在区域限制\nURL: {url}",
                     )
                 )
 
